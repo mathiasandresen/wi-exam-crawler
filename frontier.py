@@ -91,7 +91,7 @@ class Frontier:
     def __fill_back_queue(self, index: int) -> bool:
         front_queue_empty = True
         for front_queue in self.front_queues:
-            if len(front_queue != 0):
+            if len(front_queue) != 0:
                 front_queue_empty = False
                 break
             

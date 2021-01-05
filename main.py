@@ -19,7 +19,7 @@ CORPUS_SIZE = int(sys.argv[1]) if len(sys.argv) > 1 else 500
 
 def main():
 
-    corpus = Corpus(output="random_with_dupes/result-{}.csv".format(CORPUS_SIZE))
+    corpus = Corpus(output="random_without_dupes/result-{}.csv".format(CORPUS_SIZE))
     frontier = Frontier(corpus, 10, 8, duplicate_identification=True, verbose=VERBOSE, debug=DEBUG)
     
     crawler = Crawler(SEEDS, corpus, frontier, corpuse_max_size=CORPUS_SIZE, duplicate_identification=True, verbose=VERBOSE, debug=DEBUG)

@@ -11,7 +11,7 @@ from corpus import Corpus
 
 class Crawler:
 
-    blacklist = ["http://www.adgangstjekker.aau.dk"]
+    blacklist = []
     frontier: Frontier
     corpus: Corpus
     verbose: bool

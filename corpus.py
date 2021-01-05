@@ -13,7 +13,7 @@ class Corpus:
         self.corpus.append(value)
         f = open(self.output, "a", encoding="UTF-8")
 
-        title = value[0].replace("\n", "\\n")
+        title = repr(value[0]).strip('\'')
         title = title.replace(";", "<<semicolon>>")
         url =  value[1]
 

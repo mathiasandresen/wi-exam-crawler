@@ -8,12 +8,15 @@ from corpus import Corpus
 T = TypeVar('T')
 class Queue(Generic[T]):
     items: list[T]
+    is_stack: bool
 
-    def __init__(self) -> None:
+    def __init__(self, is_stack=False) -> None:
         self.items = []
+        self.is_stack = is_stack
 
     def extract_next(self) -> T:
-        return self.items.pop(0)
+        value = self.items.pop() if self.is_stack else self.items.pop(0)
+        return value
         
     def insert(self, item: T) -> None:
         self.items.append(item)
@@ -22,7 +25,7 @@ class Queue(Generic[T]):
         return item in self.items
 
     def empty(self) -> bool:
-        return len(self.items) > 0
+        return len(self.items) <= 0
         
 class Frontier:
     front_queues: list[Queue[str]] = []
@@ -42,11 +45,11 @@ class Frontier:
         self.duplicate_identification = duplicate_identification
         # Create front queues
         for i in range(amount_of_front_queues):
-            self.front_queues.append(Queue())
+            self.front_queues.append(Queue(is_stack=True))
             self.choice_array.extend([i] * (i + 1))
         # Create back queues
         for i in range(amount_of_back_queues):
-            self.back_queues.append(Queue())
+            self.back_queues.append(Queue(is_stack=True))
             heapq.heappush(self.back_queue_heap, (datetime.now(), i))
     
     def add_url(self, url: str):
@@ -104,14 +107,14 @@ class Frontier:
 
     def __front_queue_selector(self) -> int:
         rand = random.choice(self.choice_array)
-        while self.front_queues[rand].empty() == 0:
+        while self.front_queues[rand].empty():
             rand = random.choice(self.choice_array)
         return rand
 
     def __fill_back_queue(self, index: int) -> bool:
         front_queue_empty = True
         for front_queue in self.front_queues:
-            if not front_queue.empty():
+            if front_queue.empty() == False:
                 front_queue_empty = False
                 break
             

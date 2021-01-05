@@ -1,12 +1,32 @@
+from typing import TypeVar, Generic
 from urllib.parse import urlparse
 import heapq
 from datetime import datetime, timedelta
 import random
 from corpus import Corpus
 
+T = TypeVar('T')
+class Queue(Generic[T]):
+    items: list[T]
+
+    def __init__(self) -> None:
+        self.items = []
+
+    def extract_next(self) -> T:
+        return self.items.pop(0)
+        
+    def insert(self, item: T) -> None:
+        self.items.append(item)
+
+    def contains(self, item: T) -> bool:
+        return item in self.items
+
+    def empty(self) -> bool:
+        return len(self.items) > 0
+        
 class Frontier:
-    front_queues: list[list[str]] = []
-    back_queues: list[list[str]] = []
+    front_queues: list[Queue[str]] = []
+    back_queues: list[Queue[str]] = []
     back_queue_heap = []
     back_queue_map = {}
     verbose: bool
@@ -22,11 +42,11 @@ class Frontier:
         self.duplicate_identification = duplicate_identification
         # Create front queues
         for i in range(amount_of_front_queues):
-            self.front_queues.append([])
+            self.front_queues.append(Queue())
             self.choice_array.extend([i] * (i + 1))
         # Create back queues
         for i in range(amount_of_back_queues):
-            self.back_queues.append([])
+            self.back_queues.append(Queue())
             heapq.heappush(self.back_queue_heap, (datetime.now(), i))
     
     def add_url(self, url: str):
@@ -34,11 +54,11 @@ class Frontier:
         should_be_added = True
 
         if self.duplicate_identification:
-            if url in self.front_queues[queue_id]:
+            if self.front_queues[queue_id].contains(url):
                 should_be_added = False
                 
         if should_be_added:
-            self.front_queues[queue_id].append(url)
+            self.front_queues[queue_id].insert(url)
 
     def extract_url(self) -> tuple[str, datetime, int]:
         if (len(self.back_queue_heap) == 0):
@@ -49,19 +69,19 @@ class Frontier:
     
         if self.verbose and self.debug: print("Selecting from back queue {}".format(index))
 
-        if len(self.back_queues[index]) == 0:
+        if self.back_queues[index].empty():
             self.__fill_back_queue(index)
             # If still empty try another queue
-            if len(self.back_queues[index]) == 0:
+            if self.back_queues[index].empty():
                 heapq.heappush(self.back_queue_heap, (datetime.now() + timedelta(seconds=5), index))
                 if self.verbose and self.debug: print("Heap still empty, try another queue")
                 return (None,None,None)
 
-        return (self.back_queues[index].pop(0), time, index)
+        return (self.back_queues[index].extract_next(), time, index)
 
     def update_back_queue(self, index, time):
         new_host = False
-        if len(self.back_queues[index]) == 0:
+        if self.back_queues[index].empty():
             new_host = self.__fill_back_queue(index)
 
         if new_host:
@@ -84,14 +104,14 @@ class Frontier:
 
     def __front_queue_selector(self) -> int:
         rand = random.choice(self.choice_array)
-        while len(self.front_queues[rand]) == 0:
+        while self.front_queues[rand].empty() == 0:
             rand = random.choice(self.choice_array)
         return rand
 
     def __fill_back_queue(self, index: int) -> bool:
         front_queue_empty = True
         for front_queue in self.front_queues:
-            if len(front_queue) != 0:
+            if not front_queue.empty():
                 front_queue_empty = False
                 break
             
@@ -102,22 +122,20 @@ class Frontier:
         new_host = False
 
         front_queue_index = self.__front_queue_selector()
-        url = self.front_queues[front_queue_index].pop(0)
+        url = self.front_queues[front_queue_index].extract_next()
 
         if self.verbose and self.debug: print("found {} adding to back queue".format(url))
 
         if self.back_queue_map.get(urlparse(url).hostname, None) is None:
-            self.back_queues[index].append(url)
+            self.back_queues[index].insert(url)
             self.back_queue_map[urlparse(url).hostname] = index
             new_host = True
         else:
             queue_index = self.back_queue_map[urlparse(url).hostname]
-            self.back_queues[queue_index].append(url)        
+            self.back_queues[queue_index].insert(url)        
 
-        if len(self.back_queues[index]) == 0:
+        if self.back_queues[index].empty():
             if self.verbose and self.debug: print("back queue {} still empty, running again".format(str(index)))
             self.__fill_back_queue(index)
 
         return new_host
-
-        
